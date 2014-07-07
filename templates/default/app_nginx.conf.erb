@@ -1,0 +1,71 @@
+<% if @app_server %>
+upstream <%= "#{@name}_#{@env}_#{@app_server}" %> {
+  server unix://<%= @env_root %>/shared/sockets/<%= @app_server %>.sock;
+}
+<% end %>
+
+server {
+  listen <%= node['nginx']['port'] || '80' %>;
+  server_name <%= @domain_names.join(' ') %>;
+  root <%= @env_root %>/current/public;
+
+  # try_files $uri/index.html $uri.html $uri @app;
+
+  # Assets
+  location ~ ^/assets/ {
+    root <%= @env_root %>/current/public;
+    expires 1y;
+    add_header Cache-Control public;
+    add_header Last-Modified "";
+    add_header ETag "";
+    break;
+  }
+
+  <% if @app_server %>
+  location / {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    proxy_pass http://<%= "#{@name}_#{@env}_#{@app_server}" %>;
+  }
+  <% end %>
+
+}
+
+<% if @enable_ssl %>
+
+server {
+  listen 443 ssl;
+
+  ssl_certificate <%= @env_root %>/shared/config/certificate.crt;
+  ssl_certificate_key <%= @env_root %>/shared/config/certificate.key;
+
+  server_name <%= @domain_names.join(' ') %>;
+
+  root <%= @env_root %>/current/public;
+
+  # Assets
+  location ~ ^/assets/ {
+    root <%= @env_root %>/current/public;
+    expires 1y;
+    add_header Cache-Control public;
+    add_header Last-Modified "";
+    add_header ETag "";
+    break;
+  }
+
+  <% if @app_server %>
+  location / {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_redirect off;
+
+    proxy_pass http://<%= "#{@name}_#{@env}_#{@app_server}" %>;
+  }
+  <% end %>
+
+}
+
+<% end %>

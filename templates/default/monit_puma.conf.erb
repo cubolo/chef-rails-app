@@ -1,0 +1,5 @@
+
+check process <%= @app_name %>_<%= @environment %>_puma with pidfile <%= @environment_root %>/shared/pids/puma.pid
+  start program "/etc/init.d/<%= @app_name %>_<%= @environment %>_puma start"
+  stop program "/etc/init.d/<%= @app_name %>_<%= @environment %>_puma stop"
+  if 5 restarts within 5 cycles then timeout

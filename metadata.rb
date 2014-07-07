@@ -1,0 +1,13 @@
+name             "rails-app"
+maintainer       "Cubolo"
+maintainer_email "mkiris@cubolo.com"
+license          "Apache 2.0"
+description      "Creates Rails application files"
+long_description IO.read(File.join(File.dirname(__FILE__), "README.md"))
+version          "0.0.1"
+depends          "sudo", "> 1.2.0"
+depends          "hostsfile"
+depends          "nginx"
+depends          "mongodb"
+depends          "monit"
+depends          "rbenv"

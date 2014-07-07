@@ -1,0 +1,35 @@
+#!/usr/bin/env puma
+
+env_root = "<%= @env_root %>"
+
+# The directory to operate out of.
+directory "#{env_root}/current"
+
+# Store the pid of the server in the file at “path”.
+pidfile "#{env_root}/shared/pids/puma.pid"
+
+# Bind the server to “url”. “tcp://”, “unix://” and “ssl://” are the only
+# accepted protocols.
+bind "unix://#{env_root}/shared/sockets/puma.sock"
+
+threads <%= @threads || "1,4" %>
+workers <%= @number_of_workers || 1 %>
+
+# Change the default timeout of workers
+worker_timeout 30
+
+# Preload the application before starting the workers; this conflicts with
+# phased restart feature. (off by default)
+# preload_app!
+
+on_worker_boot do
+  if defined?(ActiveRecord::Base)
+    ActiveSupport.on_load(:active_record) do
+      ActiveRecord::Base.establish_connection
+    end
+  end
+end
+
+on_restart do
+  defined?(ActiveRecord::Base) and ActiveRecord::Base.connection.disconnect!
+end
