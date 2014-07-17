@@ -1,17 +1,17 @@
 
-APP_DIR = "<%= node['rails']['applications_root'] %>/<%= @name %>"
+env_root = "<%= @env_root %>"
  
 # This loads the application in the master process before forking
 # worker processes
 # Read more about it here:
 # http://unicorn.bogomips.org/Unicorn/Configurator.html
 preload_app true
-worker_processes <%= @number_of_workers || 2 %>
-working_directory APP_DIR
+worker_processes <%= @number_of_workers %>
+working_directory "#{env_root}/current"
  
 # This is where we specify the socket.
 # We will point the upstream Nginx module to this socket later on
-listen "#{APP_DIR}/shared/sockets/unicorn.sock", :backlog => 2048
+listen "#{env_root}/shared/sockets/unicorn.sock", :backlog => 2048
  
 # nuke workers after 30 seconds instead of 60 seconds (the default)
 timeout 30
@@ -19,9 +19,9 @@ timeout 30
 # feel free to point this anywhere accessible on the filesystem
 # user 'nginx', 'www-data'
  
-pid "#{APP_DIR}/shared/pids/unicorn.pid"
-stderr_path "#{APP_DIR}/log/unicorn.stderr.log"
-stdout_path "#{APP_DIR}/log/unicorn.stdout.log"
+pid "#{env_root}/shared/pids/unicorn.pid"
+stderr_path "#{env_root}/shared/log/unicorn.stderr.log"
+stdout_path "#{env_root}/shared/log/unicorn.stdout.log"
  
 # http://www.rubyenterpriseedition.com/faq.html#adapt_apps_for_cow
 if GC.respond_to?(:copy_on_write_friendly=)
@@ -29,13 +29,13 @@ if GC.respond_to?(:copy_on_write_friendly=)
 end
 
 #before_exec do |server|
-#  ENV["BUNDLE_GEMFILE"] = "#{app_path}/current/Gemfile"
+#  ENV["BUNDLE_GEMFILE"] = "#{env_root}/current/Gemfile"
 #end
  
 before_fork do |server, worker|
   # the following is highly recomended for Rails + "preload_app true"
   # as there's no need for the master process to hold a connection
-  defined?(ActiveRecord::Base) and ActiveRecord::Base.connection.disconnect!
+  defined?(ActiveRecord::Base) && ActiveRecord::Base.connection.disconnect!
  
   ##
   # When sent a USR2, Unicorn will suffix its pidfile with .oldbin and
