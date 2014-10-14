@@ -1,5 +1,5 @@
 #
-# Cookbook Name:: rails-app
+# Cookbook Name:: rails_app
 # Recipe:: default
 #
 # Copyright 2014, Matiss Kiris
@@ -17,17 +17,15 @@
 # limitations under the License.
 #
 
+deploy_user = node['rails_app']['user']
+admin_user = node['rails_app']['admin']
 
-deploy_user = node["rails_app"]["user"]
-admin_user = node["rails_app"]["admin"]
-
-
-node["rails_app"]["apps"].each do |app, app_info|
+node['rails_app']['apps'].each do |app, _app_info|
 
   app_data = data_bag_item('rails_apps', app)
   app_root = "/home/#{deploy_user}/apps/#{app}"
 
-  app_data["environments"].each do |env, env_data|
+  app_data['environments'].each do |env, env_data|
 
     env_root = app_root + "/#{env}"
     env_enabled = env_data['enable'].nil? ? false : env_data['enable']
@@ -51,7 +49,6 @@ node["rails_app"]["apps"].each do |app, app_info|
         owner deploy_user
       end
     end
-
 
     # Database config
     if env_data['database']
@@ -77,7 +74,7 @@ node["rails_app"]["apps"].each do |app, app_info|
         owner deploy_user
         group deploy_user
         mode 0644
-        source "app_cert.crt.erb"
+        source 'app_cert.crt.erb'
         variables app_crt: env_data['ssl_info']['crt']
       end
 
@@ -85,12 +82,12 @@ node["rails_app"]["apps"].each do |app, app_info|
         owner deploy_user
         group deploy_user
         mode 0644
-        source "app_cert.key.erb"
+        source 'app_cert.key.erb'
         variables app_key: env_data['ssl_info']['key']
       end
     end
 
-    # Nginx 
+    # Nginx
 
     template "/etc/nginx/sites-available/#{app}_#{env}.conf" do
       owner admin_user
@@ -100,11 +97,12 @@ node["rails_app"]["apps"].each do |app, app_info|
         name: app,
         env: env,
         domain_names: env_data['domains'],
-        enable_ssl: File.exists?("#{env_root}/shared/config/certificate.crt"),
+        enable_ssl: File.exist?("#{env_root}/shared/config/certificate.crt"),
         env_root: env_root,
         app_server: env_data['application_server'].nil? ? nil : env_data['application_server']['type']
       )
-      source "app_nginx.conf.erb"
+      source 'app_nginx.conf.erb'
+      notifies :restart, 'service[nginx]', :delayed
     end
 
     # Application server
@@ -121,16 +119,16 @@ node["rails_app"]["apps"].each do |app, app_info|
       # Application server init script
       template "/etc/init.d/#{app}_#{env}_#{app_server}" do
         source "#{app_server}_init.sh.erb"
-        owner "root"
-        group "root"
+        owner 'root'
+        group 'root'
         mode 00755
-        variables({
-          "name"              => app,
-          "environment_root"  => env_root,
-          "environment"       => env,
-          "deploy_user"       => deploy_user,
-          "ruby_version"      => env_data['ruby_version']
-        })
+        variables(
+          'name'             => app,
+          'environment_root' => env_root,
+          'environment'      => env,
+          'deploy_user'      => deploy_user,
+          'ruby_version'     => env_data['ruby_version']
+        )
       end
 
       # Run application server at boot
@@ -158,8 +156,8 @@ node["rails_app"]["apps"].each do |app, app_info|
 
     env_data['local_domains'].each do |local|
       hostsfile_entry '127.0.0.1' do
-        hostname  local
-        action    :append
+        hostname local
+        action   :append
       end
     end unless env_data['local_domains'].nil?
 
@@ -172,14 +170,14 @@ node["rails_app"]["apps"].each do |app, app_info|
         owner admin_user
         group admin_user
         mode 00644
-        variables({
-          "environment_root" => env_root,
-          "app_name"         => app,
-          "environment"      => env,
-          "config"           => env_data
-        })
+        variables(
+          'environment_root' => env_root,
+          'app_name'         => app,
+          'environment'      => env,
+          'config'           => env_data
+        )
 
-        notifies :restart, "service[monit]", :delayed
+        notifies :restart, 'service[monit]', :delayed
       end
 
    end
