@@ -9,7 +9,7 @@ server {
   server_name <%= @domain_names.join(' ') %>;
   root <%= @env_root %>/current/public;
 
-  # try_files $uri/index.html $uri.html $uri @app;
+  try_files $uri/index.html $uri.html $uri @app;
 
   # Assets
   location ~ ^/assets/ {
