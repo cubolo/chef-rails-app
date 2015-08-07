@@ -1,4 +1,4 @@
-name             "rails-app"
+name             "rails_app"
 maintainer       "Cubolo"
 maintainer_email "mkiris@cubolo.com"
 license          "Apache 2.0"
